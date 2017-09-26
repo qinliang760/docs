@@ -71,6 +71,7 @@ RDS_PWD=''
 
 ```
 
+
 ### Router
 
 当用户访问一个 URL 时，最后是通过 controller 里具体的 action 来响应的。所以就需要解析出 URL 对应的 controller 和 action，
@@ -89,6 +90,9 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
 
 目前view层只是作为页面静态化的模板。
 
+### Model
+
+
 > ## **缓存、数据库**
 
 目前使用redis作为缓存，通过set、get来存储和获取缓存数据。
@@ -99,9 +103,9 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
 
 > ## **进阶应用**
 
-### 多进程
+### 多进程Cluster
 
-使用nodejs自带的cluster模块实现，使用graceful模块设置自启动。
+使用nodejs自带的cluster模块实现，使用graceful模块设置自启动作为守护进程。
 
 
 ```js
@@ -113,14 +117,6 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
 
       for (var i = 0; i < numCPUs; i++) {
         worker = cluster.fork();
-        worker.on("message", function(data){
-          //console.log("the worker " + worker.id + "|" + worker.process.pid);
-  　　　　　　workers.forEach(function(wk){
-  　　　　　　　　wk.send(wk);
-  　　　　　　});
-        });
-        workers.push(worker);
-        
       }
       /**
        * 监听worker向master状态事件
@@ -141,13 +137,6 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
         }, 2000);
       });
 
-      cluster.on('fork', function (worker) {
-          //console.log('[master] ' + 'fork: worker' + worker.id);
-      });
-
-      cluster.on('online', function (worker) {
-          //console.log('[master] ' + 'online: worker' + worker.id);
-      });
       /**
        * 监听master和worker的message事件
        * @param  {[type]} id) {                   cluster.workers[id].on('message', function(pid) {          workerObj['process id:  ' + pid] + [description]
@@ -162,13 +151,10 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
         logger.info('worker' + cluster.worker.id+" success");
 
       });
-        process.on('message', function(msg){
-          process.send(msg);
 
-        });
 
       /**
-       * 当uncaughtException触发后，延迟一段时间退出进程 uncaughtException emit, base on process.on('uncaughtException')
+       * 守护进程，当uncaughtException触发后，延迟一段时间退出进程 uncaughtException emit, base on process.on('uncaughtException')
        * @param  {[type]} {                       server: [ server ],          error: (err, throwErrorCount [description]
        * @return {[type]}    [description]
        */
@@ -246,19 +232,39 @@ MVC 模型中，控制器是用户请求的逻辑处理部分。
         });
 
 
-```        
+```      
+
+### IO
+
+Stream  
 
 ### 安全性
 
-XSS、CSRF
+- Crypto (加密)
+- HTTPS
+- XSS
+- CSRF
+- Sql/Nosql 注入
 
-### 单元测试
+### 测试
 
-使用mocha模块进行单元测试。
+- 单元测试（mocha）
+覆盖率
+Mock
+- 基准测试
+白盒测试（benchmark）
+黑盒测试（Apache ab）
 
-### 性能测试、压力测试
+- 集成测试
+- 压力测试（Jmeter）
 
-apache bin目录下的ab.exe
+### 存储
+
+- Cookie
+
+- 缓存
+
+- 数据库 NoSql
 
 
 ### 异常、错误处理
