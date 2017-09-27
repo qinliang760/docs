@@ -11,10 +11,23 @@
 > 特征
 
 - 基于express@4.13.4,nodejs@6.9.0
+- 多进程
+- http代理转发
+- 静态化
+- redis通知机制
+- 错误处理、异常处理
 
 > 架构
 
-![架构图](https://thumbnail0.baidupcs.com/thumbnail/4b8c61f9b004f6055b847c61ccdc508a?fid=2483048885-250528-339503342833614&time=1505811600&rt=sh&sign=FDTAER-DCb740ccc5511e5e8fedcff06b081203-4kLUJlccDNjuR%2B1P5XZ94DyhjpI%3D&expires=8h&chkv=0&chkbd=0&chkpc=&dp-logid=6069955521780655514&dp-callid=0&size=c710_u400&quality=100&vuk=-&ft=video)
+- 处理用户请求
+
+  Config - Router - Logic - Controller
+
+- 功能扩展
+
+  Logger - Cluster - View(Ejs) - Redis - Cookie - Error
+
+
 
 > ## **基础功能**
 
@@ -71,10 +84,84 @@ RDS_PWD=''
 
 ```
 
+### 启动配置
+
+- 设置views目录和模板
+
+```
+  app.set('views', path.resolve(baseDir, 'views'));
+  app.set('view engine', appOptions.staticTmp);
+
+```
+- 加载环境配置文件
+
+```
+const envSet = require('node-env-file');
+let appOptions = this._options.appOptions
+let baseDir = this._options.baseDir;
+//根据启动带的环境参数dev|test|prod来加载相应目录的环境配置文件
+envSet(appOptions.configPath);
+
+```
+
+
+### 中间件
+
+- 处理响应json格式以及url处理
+
+```
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({
+      extended: true
+  }));
+  app.use(cookieParser());
+
+```
+
+- cookie处理
+
+```
+  app.use(cookieParser());
+
+```
+
+- redis连接
+
+```
+        //设置全局redis实例
+        let client = redis().createClient();
+        fbi.redisClient=client;
+        app.use(function(req, res, next) {
+            req.client = client;
+            next();
+        })
+
+```
+
+- Middleware
+
+
 
 ### Router
 
 当用户访问一个 URL 时，最后是通过 controller 里具体的 action 来响应的。所以就需要解析出 URL 对应的 controller 和 action，
+
+
+```
+      //一级路由
+      app.use('/action', this.getRoutePath("routes/action"));
+      app.use('/comments', this.getRoutePath("middleware/comments"));
+      app.use('/battlenet', this.getRoutePath("middleware/battlenet"));
+
+      //二级路由
+      router.all('/:page/:sub', function(req, res,next){
+        loginInfo(req, res,next)
+      },function(req, res) {
+          let page = req.params.page;
+          let sub = req.params.sub;
+          require('../controllers/' + page)[sub](req, res);
+      });
+```      
 
 ### Logic
 
@@ -249,11 +336,14 @@ Stream
 ### 测试
 
 - 单元测试（mocha）
-覆盖率
-Mock
+
+  - 覆盖率
+  - Mock
+
 - 基准测试
-白盒测试（benchmark）
-黑盒测试（Apache ab）
+
+  - 白盒测试（benchmark）
+  - 黑盒测试（Apache ab）
 
 - 集成测试
 - 压力测试（Jmeter）
@@ -268,3 +358,34 @@ Mock
 
 
 ### 异常、错误处理
+
+- 使用方法作为中间件过滤
+
+
+```
+
+        //express错误处理
+        app.use(error.pageErrors);
+        app.use(error.clientErrorHandler);
+        app.use(error.errorHandler);
+
+
+        /**
+         * 异常捕获,只要给uncaughtException配置了回调，Node进程不会异常退出(异步也能捕获)
+         * @param  {[type]}       
+         * @return {[type]}
+         */
+        process.on('uncaughtException', function(err) {
+            console.error('Error caught in uncaughtException event:', err);
+            logger.error(err);
+        });        
+
+```        
+
+### 异步
+
+- Promise
+
+- Generater
+
+结合co一起使用
